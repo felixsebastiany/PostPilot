@@ -91,3 +91,8 @@ type CanceledSubscription {
     order_number: String
     name: String
 }
+
+type Order {
+    stripe_checkout_url: String @resolver(class: "PostPilot\\StripeCustom\\Model\\Resolver\\StripeCheckoutUrl")
+}
+
