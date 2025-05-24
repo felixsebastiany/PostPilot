@@ -1,0 +1,93 @@
+type Query {
+    activeSubscriptions: ActiveSubscriptionResult @resolver(class: "PostPilot\\StripeCustom\\Model\\Resolver\\CustomerStripeSubscriptions")
+}
+
+type ActiveSubscriptionResult {
+    items: [Subscription!]!
+}
+
+type Subscription {
+    id: String!
+    status: String!
+    current_period_start: String!
+    current_period_end: String!
+    created: Int!
+    formatted_status: String!
+    subscription_name: String!
+    default_payment_method: PaymentMethod
+    items: [SubscriptionItem!]!
+    metadata: SubscriptionMetadata
+    product_ids: [String]
+    is_salable: Boolean
+}
+
+type SubscriptionMetadata {
+    Product_ID: String
+    SubscriptionProductIDs: String
+}
+
+type PaymentMethod {
+    id: String!
+    type: String!
+    card: CardDetails
+}
+
+type CardDetails {
+    brand: String!
+    brand_image_url: String!
+    last4: String!
+    exp_month: Int!
+    exp_year: Int!
+}
+
+type SubscriptionItem {
+    id: String!
+    price: Price!
+    quantity: Int!
+    product: Product
+}
+
+type Price {
+    id: String!
+    unit_amount: Int!
+    currency: String!
+    product: Product
+    recurring: Recurring
+}
+
+type Recurring {
+    interval: String!
+}
+
+
+type Product {
+    id: String!
+    name: String!
+    images: [String]
+}
+
+type Mutation {
+    cancelStripeSubscription(
+        input: CancelStripeSubscriptionInput!
+    ): CancelStripeSubscriptionOutput @resolver(class: "PostPilot\\StripeCustom\\Model\\Resolver\\CancelStripeSubscription") @doc(description: "Cancela uma assinatura do Stripe")
+}
+
+input CancelStripeSubscriptionInput {
+    subscription_id: String!
+}
+
+type CancelStripeSubscriptionOutput {
+    success: Boolean!
+    message: String!
+    subscription: CanceledSubscription
+}
+
+type CanceledSubscription {
+    id: String!
+    status: String!
+    canceled_at: String
+    cancel_at_period_end: Boolean!
+    current_period_end: String!
+    order_number: String
+    name: String
+}
