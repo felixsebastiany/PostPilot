@@ -24,11 +24,11 @@ class CancelStripeSubscription implements ResolverInterface
     }
 
     public function resolve(
-        Field $field,
-              $context,
+        Field       $field,
+                    $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array      $value = null,
+        ?array      $args = null
     ) {
         if (!$context->getExtensionAttributes()->getIsCustomer()) {
             throw new GraphQlAuthorizationException(

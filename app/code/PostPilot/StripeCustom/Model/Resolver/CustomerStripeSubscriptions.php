@@ -40,11 +40,11 @@ class CustomerStripeSubscriptions implements ResolverInterface
      * @throws GraphQlInputException
      */
     public function resolve(
-        Field $field,
-        mixed $context,
+        Field       $field,
+        mixed       $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array      $value = null,
+        ?array $args = null
     ): array {
         try {
             $activeSubscriptions = [];
