@@ -12,7 +12,7 @@ use Magento\Store\Model\ScopeInterface;
 class Data extends AbstractHelper
 {
     /** @var string Caminho da configuração da URL de sucesso do Stripe */
-    public const string XML_PATH_SUCCESS_URL = 'stripe_payments/payments/success_url';
+    public const XML_PATH_SUCCESS_URL = 'stripe_payments/payments/success_url';
 
     /**
      * Retorna a URL de sucesso configurada para o Stripe.
