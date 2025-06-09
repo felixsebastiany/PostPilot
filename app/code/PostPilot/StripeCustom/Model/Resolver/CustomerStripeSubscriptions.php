@@ -7,6 +7,7 @@ use Magento\Framework\GraphQl\Config\Element\Field;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
 use Magento\Framework\GraphQl\Exception\GraphQlInputException;
+use Magento\Framework\App\CacheInterface;
 use StripeIntegration\Payments\Helper\Generic;
 use StripeIntegration\Payments\Helper\Subscriptions;
 use StripeIntegration\Payments\Helper\PaymentMethod;
@@ -19,13 +20,26 @@ use StripeIntegration\Payments\Model\Config;
  */
 class CustomerStripeSubscriptions implements ResolverInterface
 {
+    private const CACHE_TTL = 3600;
+
+    /**
+     * Nome do cache
+     */
+    private const CACHE_KEY_PREFIX = 'stripe_subscriptions_';
+
+    /**
+     * Tag de cache
+     */
+    private const CACHE_TAG = 'STRIPE_SUBSCRIPTIONS';
+
     public function __construct(
         private readonly Generic $helper,
         private readonly Subscriptions $subscriptionsHelper,
         private readonly PaymentMethod $paymentMethodHelper,
         private readonly Product $productHelper,
         private readonly SubscriptionFactory $subscriptionFactory,
-        private readonly Config $config
+        private readonly Config $config,
+        private readonly CacheInterface $cache
     ) {}
 
     /**
@@ -47,13 +61,33 @@ class CustomerStripeSubscriptions implements ResolverInterface
         ?array $args = null
     ): array {
         try {
-            $activeSubscriptions = [];
             $stripeCustomer = $this->helper->getCustomerModel();
+
+            // Gera chave de cache única para o cliente atual
+            $customerId = $stripeCustomer->getStripeId();
+            if (!$customerId) {
+                return ['items' => []];
+            }
+
+            $cacheKey = self::CACHE_KEY_PREFIX . $customerId;
+
+            // Tenta obter dados do cache
+            $cachedData = $this->cache->load($cacheKey);
+            if ($cachedData) {
+                return json_decode($cachedData, true);
+            }
+
+            // Busca todas as assinaturas em uma única chamada
+            $activeSubscriptions = [];
             $allSubscriptions = $stripeCustomer->getAllSubscriptions();
 
             if (!is_iterable($allSubscriptions)) {
                 return ['items' => []];
             }
+
+            // Otimização: colete todos os IDs de produtos necessários em uma única passagem
+            $productIds = [];
+            $products = [];
 
             foreach ($allSubscriptions as $subscription) {
                 if (!is_object($subscription)) {
@@ -64,10 +98,58 @@ class CustomerStripeSubscriptions implements ResolverInterface
                     continue;
                 }
 
-                $activeSubscriptions[] = $this->formatSubscription($subscription);
+                // Colete todos os IDs de produtos de uma vez
+                if (isset($subscription->items->data) && is_array($subscription->items->data)) {
+                    foreach ($subscription->items->data as $item) {
+                        if (isset($item->price, $item->price->product) && is_string($item->price->product)) {
+                            $productIds[$item->price->product] = $item->price->product;
+                        }
+                    }
+                }
             }
 
-            return ['items' => $activeSubscriptions];
+            // Busque todos os produtos de uma vez para evitar múltiplas chamadas à API
+            if (!empty($productIds)) {
+                try {
+                    $stripe = $this->config->getStripeClient();
+                    // Limite a 100 produtos por consulta (limite da API Stripe)
+                    $chunks = array_chunk(array_values($productIds), 100);
+
+                    foreach ($chunks as $chunk) {
+                        $stripeProducts = $stripe->products->all(['ids' => $chunk]);
+                        foreach ($stripeProducts->data as $product) {
+                            $products[$product->id] = $product;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $this->helper->logError('Erro ao buscar produtos em lote: ' . $e->getMessage());
+                }
+            }
+
+            // Agora processe as assinaturas com os produtos já carregados
+            foreach ($allSubscriptions as $subscription) {
+                if (!is_object($subscription)) {
+                    continue;
+                }
+
+                if (in_array($subscription->status, ['canceled', 'incomplete', 'incomplete_expired'], true)) {
+                    continue;
+                }
+
+                $activeSubscriptions[] = $this->formatSubscription($subscription, $products);
+            }
+
+            $result = ['items' => $activeSubscriptions];
+
+            // Salva no cache
+            $this->cache->save(
+                json_encode($result),
+                $cacheKey,
+                [self::CACHE_TAG],
+                self::CACHE_TTL
+            );
+
+            return $result;
         } catch (\Throwable $e) {
             $this->helper->logError($e->getMessage());
             throw new GraphQlInputException(
@@ -80,11 +162,11 @@ class CustomerStripeSubscriptions implements ResolverInterface
      * Formata uma assinatura Stripe para o formato GraphQL.
      *
      * @param object $subscription
+     * @param array $preloadedProducts Produtos pré-carregados
      * @return array
      */
-    private function formatSubscription(object $subscription): array
+    private function formatSubscription(object $subscription, array $preloadedProducts = []): array
     {
-        $stripeSubscriptionModel = $this->subscriptionFactory->create()->fromSubscription($subscription);
         $formattedPaymentMethod = $this->formatPaymentMethod($subscription->default_payment_method ?? null);
 
         return [
@@ -96,13 +178,8 @@ class CustomerStripeSubscriptions implements ResolverInterface
             'created' => $subscription->created ?? 0,
             'subscription_name' => $this->subscriptionsHelper->generateSubscriptionName($subscription),
             'default_payment_method' => $formattedPaymentMethod,
-            'items' => $this->formatSubscriptionItems($subscription->items->data ?? []),
-            'metadata' => [
-                'Product_ID' => $subscription->metadata->{"Product ID"} ?? null,
-                'SubscriptionProductIDs' => $subscription->metadata->{"SubscriptionProductIDs"} ?? null
-            ],
+            'items' => $this->formatSubscriptionItems($subscription->items->data ?? [], $preloadedProducts),
             'product_ids' => $this->getProductIds($subscription),
-            'is_salable' => $this->checkProductIsSalable($subscription)
         ];
     }
 
@@ -140,12 +217,13 @@ class CustomerStripeSubscriptions implements ResolverInterface
     }
 
     /**
-     * Formata os itens da assinatura.
+     * Formata os itens da assinatura usando produtos pré-carregados.
      *
      * @param array $items
+     * @param array $preloadedProducts Produtos pré-carregados
      * @return array
      */
-    private function formatSubscriptionItems(array $items): array
+    private function formatSubscriptionItems(array $items, array $preloadedProducts = []): array
     {
         $formattedItems = [];
         foreach ($items as $item) {
@@ -156,18 +234,17 @@ class CustomerStripeSubscriptions implements ResolverInterface
             $price = $item->price;
             $product = null;
 
+            // Verifica primeiro se o produto está disponível no objeto price
             if (isset($price->product) && is_object($price->product)) {
                 $product = $this->formatProduct($price->product);
-            } elseif (isset($item->plan, $item->plan->product) && is_object($item->plan->product)) {
+            }
+            // Depois verifica se está no objeto plan
+            elseif (isset($item->plan, $item->plan->product) && is_object($item->plan->product)) {
                 $product = $this->formatProduct($item->plan->product);
-            } elseif (isset($price->product) && is_string($price->product)) {
-                try {
-                    $stripe = $this->config->getStripeClient();
-                    $stripeProduct = $stripe->products->retrieve($price->product);
-                    $product = $this->formatProduct($stripeProduct);
-                } catch (\Throwable $e) {
-                    $this->helper->logError($e->getMessage());
-                }
+            }
+            // Por último, usa o produto pré-carregado
+            elseif (isset($price->product) && is_string($price->product) && isset($preloadedProducts[$price->product])) {
+                $product = $this->formatProduct($preloadedProducts[$price->product]);
             }
 
             $recurring = isset($price->recurring)
@@ -192,12 +269,12 @@ class CustomerStripeSubscriptions implements ResolverInterface
     /**
      * Formata um produto Stripe.
      *
-     * @param object|string|null $product
+     * @param object|null $product
      * @return array|null
      */
-    private function formatProduct(object|string|null $product): ?array
+    private function formatProduct(?object $product): ?array
     {
-        if (!$product || is_string($product)) {
+        if (!$product) {
             return null;
         }
 
@@ -240,33 +317,6 @@ class CustomerStripeSubscriptions implements ResolverInterface
             $productIds = explode(",", $subscription->metadata->{"SubscriptionProductIDs"});
         }
         return array_map('trim', $productIds);
-    }
-
-    /**
-     * Verifica se algum produto da assinatura está disponível para venda.
-     *
-     * @param object $subscription
-     * @return bool
-     */
-    private function checkProductIsSalable(object $subscription): bool
-    {
-        $productIds = $this->getProductIds($subscription);
-
-        if (empty($productIds)) {
-            return false;
-        }
-
-        foreach ($productIds as $productId) {
-            try {
-                $product = $this->productHelper->getProduct($productId);
-                if ($product && $product->getIsSalable()) {
-                    return true;
-                }
-            } catch (\Throwable $e) {
-                $this->helper->logError($e->getMessage());
-            }
-        }
-        return false;
     }
 
     /**
