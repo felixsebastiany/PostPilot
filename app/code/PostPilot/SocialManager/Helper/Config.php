@@ -8,23 +8,22 @@ use Magento\Store\Model\ScopeInterface;
 
 class Config extends AbstractHelper
 {
-    private const string XML_PATH_PREFIX = 'postpilot/upload_post/';
-    private const string XML_PATH_SYNC_PREFIX = 'postpilot/sync_settings/';
+    private const XML_PATH_PREFIX = 'postpilot/upload_post/';
+    private const XML_PATH_SYNC_PREFIX = 'postpilot/sync_settings/';
 
     /**
      * Caminhos das configurações
      */
-    private const string XML_PATH_API_KEY = self::XML_PATH_PREFIX . 'api_key';
-    private const string XML_PATH_REDIRECT_URL = self::XML_PATH_PREFIX . 'redirect_url';
-    private const string XML_PATH_LOGO_IMAGE = self::XML_PATH_PREFIX . 'logo_image';
-    private const string XML_PATH_REDIRECT_BUTTON_TEXT = self::XML_PATH_PREFIX . 'redirect_button_text';
-    private const string XML_PATH_PLATFORMS = self::XML_PATH_PREFIX . 'platforms';
+    private const XML_PATH_API_KEY = self::XML_PATH_PREFIX . 'api_key';
+    private const XML_PATH_REDIRECT_URL = self::XML_PATH_PREFIX . 'redirect_url';
+    private const XML_PATH_LOGO_IMAGE = self::XML_PATH_PREFIX . 'logo_image';
+    private const XML_PATH_REDIRECT_BUTTON_TEXT = self::XML_PATH_PREFIX . 'redirect_button_text';
+    private const XML_PATH_PLATFORMS = self::XML_PATH_PREFIX . 'platforms';
 
     /**
      * Caminhos das configurações de sincronização
      */
-    private const string XML_PATH_SYNC_ENABLED = self::XML_PATH_SYNC_PREFIX . 'enabled';
-    private const string XML_PATH_SYNC_INTERVAL = self::XML_PATH_SYNC_PREFIX . 'sync_interval';
+    private const XML_PATH_SYNC_ENABLED = self::XML_PATH_SYNC_PREFIX . 'enabled';
 
     /**
      * Retorna a API Key
