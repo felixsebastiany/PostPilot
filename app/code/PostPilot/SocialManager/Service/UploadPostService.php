@@ -11,7 +11,7 @@ use Psr\Log\LoggerInterface;
 
 class UploadPostService
 {
-    private const string API_BASE_URL = 'https://api.upload-post.com';
+    private const API_BASE_URL = 'https://api.upload-post.com';
 
     public function __construct(
         private readonly PostPilotConfig $config,
