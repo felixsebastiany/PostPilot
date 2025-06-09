@@ -1,3 +1,4 @@
+
 type Query {
     activeSubscriptions: ActiveSubscriptionResult @resolver(class: "PostPilot\\StripeCustom\\Model\\Resolver\\CustomerStripeSubscriptions")
 }
@@ -16,14 +17,7 @@ type Subscription {
     subscription_name: String!
     default_payment_method: PaymentMethod
     items: [SubscriptionItem!]!
-    metadata: SubscriptionMetadata
     product_ids: [String]
-    is_salable: Boolean
-}
-
-type SubscriptionMetadata {
-    Product_ID: String
-    SubscriptionProductIDs: String
 }
 
 type PaymentMethod {
@@ -58,7 +52,6 @@ type Price {
 type Recurring {
     interval: String!
 }
-
 
 type Product {
     id: String!
@@ -95,4 +88,3 @@ type CanceledSubscription {
 type Order {
     stripe_checkout_url: String @resolver(class: "PostPilot\\StripeCustom\\Model\\Resolver\\StripeCheckoutUrl")
 }
-
