@@ -9,8 +9,8 @@ use PostPilot\SocialManager\Model\ResourceModel\SocialUser as SocialUserResource
 
 class SocialUser extends AbstractModel
 {
-    const string STATUS_ACTIVE = 'active';
-    const string STATUS_INACTIVE = 'inactive';
+    const STATUS_ACTIVE = 'active';
+    const STATUS_INACTIVE = 'inactive';
 
     /**
      * @throws LocalizedException
