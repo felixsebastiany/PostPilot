@@ -17,7 +17,7 @@ class GenerateJwtUP implements ResolverInterface
     ) {
     }
 
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
+    public function resolve(Field $field, $context, ResolveInfo $info, ?array $value = null, ?array $args = null)
     {
         if (!$context->getUserId()) {
             throw new GraphQlAuthorizationException(__('Current customer does not have access to the resource'));
