@@ -3,9 +3,13 @@ declare(strict_types=1);
 
 namespace PostPilot\SocialManager\Service;
 
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 use PostPilot\SocialManager\Api\SocialManagerInterface;
 use PostPilot\SocialManager\Model\SocialConnectionFactory;
 use PostPilot\SocialManager\Model\SocialConnectionRepository;
@@ -21,7 +25,11 @@ class SocialManagerService implements SocialManagerInterface
         private readonly SocialUserFactory $socialUserFactory,
         private readonly SocialUserRepository $socialUserRepository,
         private readonly SocialConnectionFactory $socialConnectionFactory,
-        private readonly SocialConnectionRepository $socialConnectionRepository
+        private readonly SocialConnectionRepository $socialConnectionRepository,
+        private readonly CustomerRepositoryInterface $customerRepository,
+        private readonly ProductRepositoryInterface $productRepository,
+        private readonly CollectionFactory $orderCollectionFactory,
+        private readonly CustomerFactory $customerFactory
     ) {
     }
 
@@ -72,6 +80,44 @@ class SocialManagerService implements SocialManagerInterface
         }
 
         try {
+            $customerId = (int)$this->customerSession->getCustomerId();
+            $customer = $this->customerRepository->getById($customerId);
+
+
+            // Verifica o último produto virtual comprado
+            $lastVirtualProduct = $this->getLastVirtualProduct($customerId);
+
+            if (!$lastVirtualProduct) {
+                return [
+                    'success' => false,
+                    'message' => 'Nenhum produto virtual encontrado para este cliente',
+                    'user' => null
+                ];
+            }
+
+            // Obtém o limite de usuários do produto
+            $usersLimit = (int) $lastVirtualProduct->getData('postpilot_users_limit');
+
+            if ($usersLimit <= 0) {
+                return [
+                    'success' => false,
+                    'message' => 'Este produto não permite adicionar usuários sociais',
+                    'user' => null
+                ];
+            }
+
+            // Obtém a quantidade atual de usuários do cliente
+            $userQty = (int) $customer?->getCustomAttribute('postpilot_users_qty')?->getValue() ?? 0;
+
+            // Verifica se atingiu o limite
+            if ($userQty >= $usersLimit) {
+                return [
+                    'success' => false,
+                    'message' => 'Você atingiu o limite de usuários sociais permitidos',
+                    'user' => null
+                ];
+            }
+
             // Criar usuário na API do Upload-Post
             $apiResponse = $this->uploadPostService->createUser($name);
 
@@ -86,10 +132,14 @@ class SocialManagerService implements SocialManagerInterface
             // Criar e salvar o usuário no banco de dados local
             $socialUser = $this->socialUserFactory->create();
             $socialUser->setName(trim($name))
-                ->setCustomerId((int)$this->customerSession->getCustomerId())
+                ->setCustomerId($customerId)
                 ->setStatus(SocialUser::STATUS_INACTIVE);
 
             $this->socialUserRepository->save($socialUser);
+
+            // Incrementa a quantidade de usuários do cliente
+            $customer->setCustomAttribute('postpilot_users_qty', $userQty + 1);
+            $this->customerRepository->save($customer);
 
             return [
                 'success' => true,
@@ -110,6 +160,7 @@ class SocialManagerService implements SocialManagerInterface
             ];
         }
     }
+
 
     /**
      * @param int $userId
@@ -169,6 +220,7 @@ class SocialManagerService implements SocialManagerInterface
 
         try {
             $customerId = (int)$this->customerSession->getCustomerId();
+            $customer = $this->customerRepository->getById($customerId);
 
             // Primeiro busca o usuário para obter o ID da API
             $user = $this->socialUserRepository->getById($userId);
@@ -195,6 +247,15 @@ class SocialManagerService implements SocialManagerInterface
             $deleted = $this->socialUserRepository->deleteByIdAndCustomer($userId, $customerId);
 
             if ($deleted) {
+                // Decrementa a quantidade de usuários do cliente
+                $userQtyAttribute = $customer->getCustomAttribute('postpilot_users_qty');
+                $userQty = (int)$userQtyAttribute?->getValue();
+
+                if ($userQty > 0) {
+                    $customer->setCustomAttribute('postpilot_users_qty', $userQty - 1);
+                    $this->customerRepository->save($customer);
+                }
+
                 return [
                     'success' => true,
                     'message' => __('Usuário social deletado com sucesso')
@@ -217,7 +278,31 @@ class SocialManagerService implements SocialManagerInterface
                 'message' => __('Ocorreu um erro ao deletar o usuário social: %1', $e->getMessage())
             ];
         }
+    }
 
+
+    /**
+     * Obtém o último produto virtual comprado pelo cliente
+     *
+     * @param int $customerId
+     * @return \Magento\Catalog\Api\Data\ProductInterface|null
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function getLastVirtualProduct(int $customerId)
+    {
+        $orderCollection = $this->orderCollectionFactory->create();
+        $orderCollection->addFieldToFilter('customer_id', $customerId)
+            ->setOrder('created_at', 'DESC');
+
+        foreach ($orderCollection as $order) {
+            foreach ($order->getAllItems() as $item) {
+                if ($item->getProduct()->getTypeId() === 'virtual') {
+                    return $this->productRepository->getById($item->getProductId());
+                }
+            }
+        }
+
+        return null;
     }
 
 }
