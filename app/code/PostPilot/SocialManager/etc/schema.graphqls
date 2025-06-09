@@ -30,6 +30,8 @@ enum SocialPlatform {
 type GetSocialUsersResponse {
     success: Boolean!
     message: String
+    user_count: Int!
+    user_limit: Int!
     users: [SocialUser!]!
 }
 

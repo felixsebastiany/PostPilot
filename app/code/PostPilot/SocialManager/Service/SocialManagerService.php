@@ -47,15 +47,36 @@ class SocialManagerService implements SocialManagerInterface
             $customerId = (int)$this->customerSession->getCustomerId();
             $users = $this->socialUserRepository->getByCustomerId($customerId);
 
+            $customer = $this->customerRepository->getById($customerId);
+            $userQty = (int) $customer?->getCustomAttribute('postpilot_users_qty')?->getValue() ?? 0;
+            $lastVirtualProduct = $this->getLastVirtualProduct($customerId);
+
+            // Obtém o limite de usuários do produto
+            $usersLimit = (int) $lastVirtualProduct->getData('postpilot_users_limit');
+
+            if (!$lastVirtualProduct) {
+                return [
+                    'success' => false,
+                    'message' => 'Nenhum produto virtual encontrado para este cliente',
+                    'user_count' => 0,
+                    'user_limit' => 0,
+                    'users' => []
+                ];
+            }
+
             return [
                 'success' => true,
                 'message' => null,
+                'user_count' => $userQty,
+                'user_limit' => $usersLimit,
                 'users' => $users
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
+                'user_count' => 0,
+                'user_limit' => 0,
                 'users' => []
             ];
         }
