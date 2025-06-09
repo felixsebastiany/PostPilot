@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="postpilot" translate="label" sortOrder="999">
+            <label>PostPilot</label>
+        </tab>
+        <section id="postpilot" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>PostPilot</label>
+            <tab>postpilot</tab>
+            <resource>PostPilot_SocialManager::config</resource>
+            <group id="upload_post" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Upload-Post</label>
+                <field id="api_key" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>ApiKey</label>
+                </field>
+                <field id="redirect_url" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Redirect URL</label>
+                </field>
+                <field id="logo_image" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Logo Image URL</label>
+                </field>
+                <field id="redirect_button_text" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Redirect Button Text</label>
+                </field>
+                <field id="platforms" translate="label" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Platforms</label>
+                    <comment>Separate platforms with comma (e.g., instagram,facebook,tiktok,youtube)</comment>
+                </field>
+            </group>
+
+            <group id="sync_settings" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Configurações de Sincronização</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Ativar Sincronização</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <postpilot>
+            <upload_post>
+                <api_key>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImZlbGl4c2ViYXN0aWFueUBnbWFpbC5jb20iLCJleHAiOjQ4OTgzMzQzNzV9.KXsXbrWzL6SKEkjtdX_kWSBl5Az8fE5gj-uTbSJT6kM</api_key>
+                <redirect_url>https://pilot-social-mirror.lovable.app/gerenciar-redes</redirect_url>
+                <logo_image>https://photos.fife.usercontent.google.com/pw/AP1GczM2K_RVm5Q0Gh0wN1IV7P39Ts0Mq9a8lJ9OFeEzfcPLU6G0blg_S-QG-A=w134-h50-s-no-gm?authuser=0</logo_image>
+                <redirect_button_text>Voltar para o PostPilot</redirect_button_text>
+                <platforms>instagram,facebook,tiktok,youtube</platforms>
+            </upload_post>
+        </postpilot>
+    </default>
+</config>

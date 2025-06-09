@@ -1,0 +1,45 @@
+{
+    "postpilot_social_users": {
+        "column": {
+            "id": true,
+            "customer_id": true,
+            "name": true,
+            "status": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "POSTPILOT_SOCIAL_USERS_CUSTOMER_ID": true,
+            "POSTPILOT_SOCIAL_USERS_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "POSTPILOT_SOCIAL_USERS_CUSTOMER_ID_CUSTOMER_ENTITY_ENTITY_ID": true
+        }
+    },
+    "postpilot_social_connections": {
+        "column": {
+            "id": true,
+            "user_id": true,
+            "platform": true,
+            "status": true,
+            "platform_user_id": true,
+            "credentials": true,
+            "created_at": true,
+            "updated_at": true,
+            "display_name": true,
+            "username": true,
+            "social_images": true
+        },
+        "index": {
+            "POSTPILOT_SOCIAL_CONNECTIONS_USER_ID": true,
+            "POSTPILOT_SOCIAL_CONNECTIONS_PLATFORM": true,
+            "POSTPILOT_SOCIAL_CONNECTIONS_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "POSTPILOT_SOCIAL_CONNECTIONS_USER_ID_POSTPILOT_SOCIAL_USERS_ID": true,
+            "POSTPILOT_SOCIAL_CONNECTIONS_USER_ID_PLATFORM": true
+        }
+    }
+}

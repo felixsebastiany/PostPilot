@@ -1,0 +1,65 @@
+type Query {
+    getSocialUsers: GetSocialUsersResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\GetSocialUsers") @doc(description: "Get social users for current customer")
+}
+
+type Mutation {
+    addSocialUser(input: AddSocialUserInput!): AddSocialUserResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\AddSocialUser") @doc(description: "Add new social user")
+    generateUPJwt(input: ConnectSocialNetworkInput!): ConnectSocialNetworkResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\GenerateJwtUP") @doc(description: "Generate JWT for connecting social network")
+    deleteSocialUser(input: DeleteSocialUserInput!): DeleteSocialUserResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\DeleteSocialUser") @doc(description: "Delete social user")
+}
+
+input AddSocialUserInput {
+    name: String! @doc(description: "User name")
+}
+
+input ConnectSocialNetworkInput {
+    userId: Int! @doc(description: "Social user ID")
+}
+
+input DeleteSocialUserInput {
+    userId: Int! @doc(description: "Social user ID")
+}
+
+enum SocialPlatform {
+    instagram
+    facebook
+    youtube
+    tiktok
+}
+
+type GetSocialUsersResponse {
+    success: Boolean!
+    message: String
+    users: [SocialUser!]!
+}
+
+type AddSocialUserResponse {
+    success: Boolean!
+    message: String
+    user: SocialUser
+}
+
+type ConnectSocialNetworkResponse {
+    success: Boolean!
+    access_url: String
+    message: String
+}
+
+type DeleteSocialUserResponse {
+    success: Boolean!
+    message: String
+}
+
+type SocialUser {
+    id: Int!
+    name: String!
+    connections: [SocialConnection!]!
+}
+
+type SocialConnection {
+    platform: String!
+    status: String!
+    username: String
+    display_name: String
+    social_images: String
+}
