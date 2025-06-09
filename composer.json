@@ -18,6 +18,8 @@
     },
     "version": "2.4.8",
     "require": {
+        "ext-curl": "*",
+        "ethanyehuda/magento2-cronjobmanager": "^2.2",
         "graycore/magento2-cors": "^2.1",
         "magento/composer-dependency-version-audit-plugin": "~0.1",
         "magento/composer-root-update-plugin": "^2.0.4",
