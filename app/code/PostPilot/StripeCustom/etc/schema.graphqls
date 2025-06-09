@@ -18,6 +18,7 @@ type Subscription {
     default_payment_method: PaymentMethod
     items: [SubscriptionItem!]!
     product_ids: [String]
+    postpilot_users_qty: Int
 }
 
 type PaymentMethod {
@@ -57,6 +58,7 @@ type Product {
     id: String!
     name: String!
     images: [String]
+    postpilot_users_limit: Int
 }
 
 type Mutation {

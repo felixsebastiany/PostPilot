@@ -3,17 +3,25 @@ declare(strict_types=1);
 
 namespace PostPilot\StripeCustom\Model\Resolver;
 
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\App\CacheInterface;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\GraphQl\Config\Element\Field;
+use Magento\Framework\GraphQl\Exception\GraphQlInputException;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use Magento\Framework\GraphQl\Exception\GraphQlInputException;
-use Magento\Framework\App\CacheInterface;
+use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
+use Stripe\CustomerSession;
 use StripeIntegration\Payments\Helper\Generic;
-use StripeIntegration\Payments\Helper\Subscriptions;
 use StripeIntegration\Payments\Helper\PaymentMethod;
 use StripeIntegration\Payments\Helper\Product;
-use StripeIntegration\Payments\Model\Stripe\SubscriptionFactory;
+use StripeIntegration\Payments\Helper\Subscriptions;
 use StripeIntegration\Payments\Model\Config;
+use StripeIntegration\Payments\Model\Stripe\SubscriptionFactory;
+use Magento\Customer\Model\Session as CustomerMagentoSession;
+
 
 /**
  * Resolver GraphQL para buscar assinaturas ativas do cliente Stripe.
@@ -39,8 +47,13 @@ class CustomerStripeSubscriptions implements ResolverInterface
         private readonly Product $productHelper,
         private readonly SubscriptionFactory $subscriptionFactory,
         private readonly Config $config,
-        private readonly CacheInterface $cache
-    ) {}
+        private readonly CacheInterface $cache,
+        private readonly CustomerRepositoryInterface $customerRepository,
+        private readonly CustomerMagentoSession $customerMagentoSession,
+        private readonly ProductRepositoryInterface $productRepository,
+        private readonly CollectionFactory $orderCollectionFactory
+    ) {
+    }
 
     /**
      * Resolve a consulta GraphQL para assinaturas ativas.
@@ -61,6 +74,11 @@ class CustomerStripeSubscriptions implements ResolverInterface
         ?array $args = null
     ): array {
         try {
+            if (!$this->customerMagentoSession->isLoggedIn()) {
+                throw new LocalizedException(__('Cliente não está logado'));
+            }
+
+
             $stripeCustomer = $this->helper->getCustomerModel();
 
             // Gera chave de cache única para o cliente atual
@@ -168,6 +186,10 @@ class CustomerStripeSubscriptions implements ResolverInterface
     private function formatSubscription(object $subscription, array $preloadedProducts = []): array
     {
         $formattedPaymentMethod = $this->formatPaymentMethod($subscription->default_payment_method ?? null);
+        $customerId = (int)$this->customerMagentoSession->getCustomerId();
+        $customer = $this->customerRepository->getById($customerId);
+
+
 
         return [
             'id' => $subscription->id ?? '',
@@ -180,6 +202,7 @@ class CustomerStripeSubscriptions implements ResolverInterface
             'default_payment_method' => $formattedPaymentMethod,
             'items' => $this->formatSubscriptionItems($subscription->items->data ?? [], $preloadedProducts),
             'product_ids' => $this->getProductIds($subscription),
+            'postpilot_users_qty' => $customer->getCustomAttribute('postpilot_users_qty')?->getValue() ?? 0,
         ];
     }
 
@@ -277,11 +300,13 @@ class CustomerStripeSubscriptions implements ResolverInterface
         if (!$product) {
             return null;
         }
-
+        $customerId = (int)$this->customerMagentoSession->getCustomerId();
+        $lastVirtualProduct = $this->getLastVirtualProduct($customerId);
         return [
             'id' => $product->id ?? '',
             'name' => $product->name ?? '',
-            'images' => $product->images ?? []
+            'images' => $product->images ?? [],
+            'postpilot_users_limit' => $lastVirtualProduct->getData('postpilot_users_limit') ?? null,
         ];
     }
 
@@ -340,5 +365,29 @@ class CustomerStripeSubscriptions implements ResolverInterface
             $this->helper->logError($e->getMessage());
             return '';
         }
+    }
+
+    /**
+     * Obtém o último produto virtual comprado pelo cliente
+     *
+     * @param int $customerId
+     * @return \Magento\Catalog\Api\Data\ProductInterface|null
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function getLastVirtualProduct(int $customerId)
+    {
+        $orderCollection = $this->orderCollectionFactory->create();
+        $orderCollection->addFieldToFilter('customer_id', $customerId)
+            ->setOrder('created_at', 'DESC');
+
+        foreach ($orderCollection as $order) {
+            foreach ($order->getAllItems() as $item) {
+                if ($item->getProduct()->getTypeId() === 'virtual') {
+                    return $this->productRepository->getById($item->getProductId());
+                }
+            }
+        }
+
+        return null;
     }
 }
