@@ -9,14 +9,14 @@ use PostPilot\SocialManager\Model\ResourceModel\SocialConnection as SocialConnec
 
 class SocialConnection extends AbstractModel
 {
-    const string STATUS_CONNECTED = 'connected';
-    const string STATUS_DISCONNECTED = 'disconnected';
-    const string STATUS_ERROR = 'error';
+    const STATUS_CONNECTED = 'connected';
+    const STATUS_DISCONNECTED = 'disconnected';
+    const STATUS_ERROR = 'error';
 
-    const string PLATFORM_INSTAGRAM = 'instagram';
-    const string PLATFORM_FACEBOOK = 'facebook';
-    const string PLATFORM_YOUTUBE = 'youtube';
-    const string PLATFORM_TIKTOK = 'tiktok';
+    const PLATFORM_INSTAGRAM = 'instagram';
+    const PLATFORM_FACEBOOK = 'facebook';
+    const PLATFORM_YOUTUBE = 'youtube';
+    const PLATFORM_TIKTOK = 'tiktok';
 
     /**
      * @throws LocalizedException
