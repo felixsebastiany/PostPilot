@@ -1,11 +1,15 @@
+
 type Query {
     getSocialUsers: GetSocialUsersResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\GetSocialUsers") @doc(description: "Get social users for current customer")
+    getContentMirrorByUserId(userId: Int!): ContentMirrorOutput @resolver(class: "PostPilot\\SocialManager\\Resolver\\GetContentMirrorByUserId") @doc(description: "Get content mirror settings for a social user by ID")
+    getContentMirrorByUsername(username: String!): ContentMirrorOutput @resolver(class: "PostPilot\\SocialManager\\Resolver\\GetContentMirrorByUsername") @doc(description: "Get content mirror settings for a social connection by username")
 }
 
 type Mutation {
     addSocialUser(input: AddSocialUserInput!): AddSocialUserResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\AddSocialUser") @doc(description: "Add new social user")
     generateUPJwt(input: ConnectSocialNetworkInput!): ConnectSocialNetworkResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\GenerateJwtUP") @doc(description: "Generate JWT for connecting social network")
     deleteSocialUser(input: DeleteSocialUserInput!): DeleteSocialUserResponse @resolver(class: "PostPilot\\SocialManager\\Resolver\\DeleteSocialUser") @doc(description: "Delete social user")
+    createContentMirror(input: ContentMirrorInput!): ContentMirrorOutput @resolver(class: "PostPilot\\SocialManager\\Resolver\\CreateContentMirror") @doc(description: "Create or update content mirror settings for a social connection")
 }
 
 input AddSocialUserInput {
@@ -64,4 +68,24 @@ type SocialConnection {
     username: String
     display_name: String
     social_images: String
+}
+
+input ContentMirrorInput {
+    userId: Int! @doc(description: "The social user ID")
+    enabled: Boolean @doc(description: "Whether the content mirror is enabled")
+    profiles_mirror: String @doc(description: "Profiles mirror data in JSON format")
+}
+
+type ContentMirrorOutput {
+    content_mirror: ContentMirror @doc(description: "The created or updated content mirror")
+}
+
+type ContentMirror {
+    id: Int @doc(description: "Content mirror ID")
+    customer_id: Int @doc(description: "Customer ID")
+    user_id: Int @doc(description: "Social user ID")
+    enabled: Boolean @doc(description: "Whether the content mirror is enabled")
+    profiles_mirror: String @doc(description: "Profiles mirror data")
+    created_at: String @doc(description: "Creation timestamp")
+    updated_at: String @doc(description: "Update timestamp")
 }

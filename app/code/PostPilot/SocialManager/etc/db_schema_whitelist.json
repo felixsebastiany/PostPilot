@@ -41,5 +41,25 @@
             "POSTPILOT_SOCIAL_CONNECTIONS_USER_ID_POSTPILOT_SOCIAL_USERS_ID": true,
             "POSTPILOT_SOCIAL_CONNECTIONS_USER_ID_PLATFORM": true
         }
+    },
+    "postpilot_content_mirror": {
+        "column": {
+            "id": true,
+            "customer_id": true,
+            "user_id": true,
+            "enabled": true,
+            "profiles_mirror": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "POSTPILOT_CONTENT_MIRROR_CUSTOMER_ID": true,
+            "POSTPILOT_CONTENT_MIRROR_USER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "POSTPILOT_CONTENT_MIRROR_CUSTOMER_ID_CUSTOMER_ENTITY_ENTITY_ID": true,
+            "POSTPILOT_CONTENT_MIRROR_USER_ID_POSTPILOT_SOCIAL_USERS_ID": true
+        }
     }
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- ContentMirror implementation -->
+    <preference for="PostPilot\SocialManager\Api\Data\ContentMirrorInterface"
+                type="PostPilot\SocialManager\Model\ContentMirror" />
+    <preference for="PostPilot\SocialManager\Api\ContentMirrorRepositoryInterface"
+                type="PostPilot\SocialManager\Model\ContentMirrorRepository" />
+
+    <!-- Certifique-se que a classe do resolver está corretamente registrada -->
+    <type name="PostPilot\SocialManager\Resolver\CreateContentMirror">
+        <arguments>
+            <argument name="contentMirrorRepository" xsi:type="object">PostPilot\SocialManager\Model\ContentMirrorRepository</argument>
+        </arguments>
+    </type>
+</config>
