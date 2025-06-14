@@ -41,11 +41,11 @@ class GetContentMirrorByUserId implements ResolverInterface
      * @inheritdoc
      */
     public function resolve(
-        Field $field,
+        Field       $field,
         $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array      $value = null,
+        ?array $args = null
     ) {
         // Verificar se o usuário está autenticado
         $customerId = $context->getUserId();

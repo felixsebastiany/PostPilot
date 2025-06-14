@@ -68,11 +68,11 @@ class CreateContentMirror implements ResolverInterface
      * @inheritdoc
      */
     public function resolve(
-        Field $field,
-              $context,
+        Field       $field,
+        $context,
         ResolveInfo $info,
-        array $value = null,
-        array $args = null
+        ?array      $value = null,
+        ?array $args = null
     ) {
         if (!isset($args['input']) || !is_array($args['input'])) {
             throw new GraphQlInputException(__('Input data is required'));
